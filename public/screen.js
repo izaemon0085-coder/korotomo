@@ -26,6 +26,21 @@ function draw(v) {
   g.beginPath();
   trail.forEach(([x, y], i) => (i ? g.lineTo(toPx(x), toPx(y)) : g.moveTo(toPx(x), toPx(y))));
   g.stroke();
+  // ゲームの星
+  if (v.game) {
+    g.font = '40px system-ui';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    for (const s of v.game.stars) {
+      g.globalAlpha = s.got ? 0.2 : 1;
+      g.fillText('⭐', toPx(s.x), toPx(s.y));
+    }
+    g.globalAlpha = 1;
+    g.font = 'bold 26px system-ui';
+    g.textAlign = 'left';
+    g.fillStyle = '#2a2622';
+    g.fillText(`${v.game.player ? `${v.game.player} さん　` : ''}${(v.game.elapsed / 1000).toFixed(1)}秒　星 ${v.game.stars.filter((s) => s.got).length}/3`, 20, 26);
+  }
   g.save();
   g.translate(toPx(v.x), toPx(v.y));
   g.rotate(v.heading);

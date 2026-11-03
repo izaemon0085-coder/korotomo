@@ -11,6 +11,12 @@
     <!-- 止めるは、いつも一番上に -->
     <button type="button" class="stop" id="stop" hidden>■ 止める</button>
 
+    <section class="card tomohane" id="tomohane">
+      <p id="tomohane-me" hidden></p>
+      <p id="tomohane-guest" class="small">ともはねのゲームとして遊べます。<a id="tomohane-login" href="#">ともはねでログイン</a>すると、ゴールの回数が ともはね に残ります。</p>
+      <a class="small" id="tomohane-back" href="#">← ともはねにもどる</a>
+    </section>
+
     <section class="card" id="pair">
       <h2>🤖 ころとも とつなぐ</h2>
       <p class="small muted">ロボットの画面で「新しい番号を出す」を押して、出た6けたを入れます。</p>
@@ -28,6 +34,7 @@
         <span class="blank"></span><button type="button" data-dir="f" aria-label="前">▲</button><span class="blank"></span>
         <button type="button" data-dir="l" aria-label="左">◀</button><button type="button" data-dir="b" aria-label="後ろ">▼</button><button type="button" data-dir="r" aria-label="右">▶</button>
       </div>
+      <button type="button" class="btn game" id="game">⭐ ゲームスタート（星を3つ集める）</button>
       <section class="card">
         <label class="field">速さ <input type="range" id="speed" min="10" max="80" value="25"></label>
         <p class="small muted">いまの上限：<strong id="max">－</strong>（こえた分は、ロボットが切ります）</p>

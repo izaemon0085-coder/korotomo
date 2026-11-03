@@ -22,12 +22,16 @@ export const UNLOCK_MAX = 80; // 2人の同意で上げられる上限
 export const UNLOCK_MS = 10 * 60 * 1000;
 const AGREE_MS = 30 * 1000; // 2人目が同意するまでの時間
 const MAX_SKEW_MS = 5000;
+// ゲーム：部屋の中の星を3つ集めたらゴール（3分まで）
+export const STAR_R = 0.12;
+export const GAME_MS = 3 * 60 * 1000;
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-export function createRobot({ now = () => Date.now() } = {}) {
+export function createRobot({ now = () => Date.now(), random = Math.random, onGameStart = () => {}, onGoal = () => ({}) } = {}) {
   const devices = new Map(); // deviceId → { id, name, secret, lastSeq, lastBeat }
   let pairing = null; // { code, until }
+  let game = null; // { stars, startedAt, player, deviceName }
   const log = [];
   const lines = [];
   const listeners = new Set();
@@ -70,14 +74,14 @@ export function createRobot({ now = () => Date.now() } = {}) {
     pairing = { code: String(randomInt(0, 1000000)).padStart(6, '0'), until: now() + 120000 };
     return pairing.code;
   }
-  function pair(code, name) {
+  function pair(code, name, player = null) {
     const nm = String(name ?? '').trim().slice(0, 20);
     if (!nm) throw new HttpError(400, 'スマホの名前を入れてください');
     if (!pairing || now() > pairing.until || String(code) !== pairing.code) throw new HttpError(403, '番号がちがうか、時間切れです（ロボットの画面で新しい番号を）');
     pairing = null; // 1回だけ
     const id = `d_${randomBytes(6).toString('hex')}`;
     const secret = randomBytes(24).toString('base64url');
-    devices.set(id, { id, name: nm, secret, lastSeq: 0, lastBeat: 0 });
+    devices.set(id, { id, name: nm, secret, lastSeq: 0, lastBeat: 0, player }); // player＝ともはねでログインした人（ゲームの記録用）
     record(nm, 'スマホをつないだ', 'ok');
     talk('kuruma', `${nm} とつながったよ。よろしくね！`);
     emit();
@@ -134,6 +138,20 @@ export function createRobot({ now = () => Date.now() } = {}) {
       r.estopReason = null;
       record(d.name, '解除', '動ける（速さ0から）');
       talk('kuruma', 'ふう。また動けるよ。ゆっくり行こうね。');
+      emit();
+      return { ok: true };
+    }
+    if (cmd.type === 'game') {
+      // 星を3つ、ロボットから少しはなれた場所に置く
+      const stars = [];
+      while (stars.length < 3) {
+        const s = { x: (random() * 2 - 1) * 0.8, y: (random() * 2 - 1) * 0.8, got: false };
+        if (Math.hypot(s.x - r.x, s.y - r.y) > 0.4 && stars.every((o) => Math.hypot(o.x - s.x, o.y - s.y) > 0.3)) stars.push(s);
+      }
+      game = { stars, startedAt: now(), player: d.player, deviceName: d.name };
+      record(d.name, 'ゲームスタート', '星を3つ');
+      talk('kuruma', `ゲームスタート！ 星を3つ集めてね。あわてず、ゆっくりでいいよ。`);
+      if (d.player) onGameStart(d.player);
       emit();
       return { ok: true };
     }
@@ -202,13 +220,36 @@ export function createRobot({ now = () => Date.now() } = {}) {
     // まねの物理：実際の速さは、命じた速さ×電池の元気さに近づいていく
     const target = r.speed * r.battery;
     r.actual += (target - r.actual) * Math.min(1, dt / 300);
-    r.heading += (r.turn / 100) * (Math.abs(r.actual) / 100) * (dt / 1000) * 2.5;
-    r.x += Math.cos(r.heading) * r.actual * (dt / 1000) * 0.004;
-    r.y += Math.sin(r.heading) * r.actual * (dt / 1000) * 0.004;
+    r.heading += (r.turn / 100) * (Math.abs(r.actual) / 100) * (dt / 1000) * 5;
+    r.x += Math.cos(r.heading) * r.actual * (dt / 1000) * 0.008;
+    r.y += Math.sin(r.heading) * r.actual * (dt / 1000) * 0.008;
     const R = 1;
     if (Math.abs(r.x) > R || Math.abs(r.y) > R) { // 部屋のかべ：はね返らず、止まる
       r.x = clamp(r.x, -R, R); r.y = clamp(r.y, -R, R);
       r.actual = 0;
+    }
+    // ゲーム：星にふれたら集める。3つでゴール。3分すぎたらおしまい
+    if (game) {
+      for (const s of game.stars) {
+        if (!s.got && Math.hypot(s.x - r.x, s.y - r.y) < STAR_R) {
+          s.got = true;
+          talk('kuruma', `星、ゲット！ あと${game.stars.filter((x) => !x.got).length}つ。`);
+          emit();
+        }
+      }
+      const ms = t - game.startedAt;
+      if (game.stars.every((x) => x.got)) {
+        const result = (game.player && onGoal(game.player, ms)) || {};
+        record(game.deviceName, 'ゴール', `${(ms / 1000).toFixed(1)}秒`);
+        talk('usagi', `ゴール！ ${(ms / 1000).toFixed(1)}秒${result.best ? '、自己ベスト！' : ''} ${game.player ? `${game.player.name}さん、` : ''}おめでとう ♪`);
+        game = null;
+        emit();
+      } else if (ms > GAME_MS) {
+        record(game.deviceName, '時間切れ', '3分');
+        talk('kuruma', '3分たったから、ここまで。また遊ぼうね！');
+        game = null;
+        emit();
+      }
     }
     // いつもの動きと比べる（ゴーストエージェントと同じ考え）：命じた速さに対して、どれだけ出ているか
     if (Math.abs(r.speed) >= 10 && Math.abs(r.actual) > 0 && Math.abs(r.actual - target) < 2) {
@@ -234,6 +275,7 @@ export function createRobot({ now = () => Date.now() } = {}) {
       unlockLeft: r.unlockUntil ? Math.max(0, Math.round((r.unlockUntil - t) / 1000)) : 0,
       waitingAgree: r.unlockRequest && t - r.unlockRequest.at < AGREE_MS ? { name: r.unlockRequest.name, max: r.unlockRequest.max } : null,
       battery: r.battery, anomaly: r.anomaly,
+      game: game ? { stars: game.stars, elapsed: t - game.startedAt, player: game.player?.name ?? null } : null,
       devices: [...devices.values()].map((d) => ({ id: d.id, name: d.name, alive: t - d.lastBeat < HEARTBEAT_LOST_MS })),
       lines: lines.slice(0, 5),
     };

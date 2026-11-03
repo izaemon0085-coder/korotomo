@@ -103,10 +103,48 @@ test('ブラックボックス：書きかえると、鎖が切れて分かる',
 test('いつもの動きと比べる：電池が弱るとヤマネコが気づく', () => {
   const { robot, phone, step } = setup();
   const a = phone('スマホA');
-  a.send({ type: 'drive', speed: 30 });
+  a.send({ type: 'drive', speed: 30, turn: 100 }); // 部屋のかべに当たらないよう、円をえがいて走る
   for (let i = 0; i < 6; i++) { step(500); a.send({ type: 'beat' }); }
   robot.setBattery(0.5);
   for (let i = 0; i < 8; i++) { step(500); a.send({ type: 'beat' }); }
   assert.equal(robot.view().anomaly, true);
   assert.ok(robot.view().lines.some((l) => l.agent === 'yamaneko' && /遅い/.test(l.text)));
+});
+
+test('ゲーム：星を3つ集めたらゴール。ゴールはともはねの人の記録に', () => {
+  let t = 1_800_000_000_000;
+  const goals = [];
+  const seq = [0.9, 0.5, 0.1, 0.5, 0.5, 0.9]; // 星の場所を決める
+  let i = 0;
+  const robot = createRobot({ now: () => t, random: () => seq[i++ % seq.length], onGameStart: () => {}, onGoal: (p, ms) => { goals.push([p.name, ms]); return { best: true }; } });
+  const d = robot.pair(robot.newPairingCode(), 'スマホ', { gameId: 'k_1', name: 'さいとう' });
+  let n = 0;
+  const send = (cmd) => {
+    const m = { deviceId: d.deviceId, seq: ++n, at: t, cmd };
+    m.mac = hmacHex(d.secret, signText(m));
+    return robot.command(m);
+  };
+  send({ type: 'game' });
+  const stars = robot.view().game.stars;
+  assert.equal(stars.length, 3);
+  // 星のところへ行ったことにする（まねの位置を動かす代わりに、星をロボットの位置に寄せて確かめる）
+  for (const s of stars) { s.x = robot.view().x; s.y = robot.view().y; }
+  t += 12_345;
+  robot.tick(50);
+  assert.equal(robot.view().game, null);
+  assert.deepEqual(goals, [['さいとう', 12_345]]);
+  assert.ok(robot.view().lines.some((l) => l.agent === 'usagi' && /ゴール！ 12\.3秒、自己ベスト/.test(l.text)));
+});
+
+test('ゲーム：3分すぎたらおしまい（ゴールにはならない）', () => {
+  let t = 1_800_000_000_000;
+  const robot = createRobot({ now: () => t });
+  const d = robot.pair(robot.newPairingCode(), 'スマホ');
+  const m = { deviceId: d.deviceId, seq: 1, at: t, cmd: { type: 'game' } };
+  m.mac = hmacHex(d.secret, signText(m));
+  robot.command(m);
+  t += 3 * 60 * 1000 + 1;
+  robot.tick(50);
+  assert.equal(robot.view().game, null);
+  assert.match(robot.log(1)[0].what, /時間切れ/);
 });
