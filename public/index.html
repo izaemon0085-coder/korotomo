@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ころとも β版</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <span class="brand">🤖 小さなロボット <span class="beta">β版</span></span>
+    <span class="motto">止めるは、いつでも効く。</span>
+  </header>
+  <main class="page">
+    <section class="board">
+      <div class="card">
+        <canvas class="room" id="room" width="600" height="600" aria-label="部屋の中のロボット（まね）"></canvas>
+      </div>
+      <div class="side" style="display:grid;gap:14px;align-content:start">
+        <div class="card status">
+          <div class="cell"><p class="muted small">いまの状態</p><p class="num" id="state">－</p></div>
+          <div class="cell"><p class="muted small">速さ（命令／実際）</p><p class="num" id="speed">－</p></div>
+          <div class="cell"><p class="muted small">速さの上限</p><p class="num" id="max">－</p></div>
+          <div class="cell"><p class="muted small">電池（まね）</p><input type="range" id="battery" min="20" max="100" value="100" aria-label="電池の元気さ（まね）"></div>
+        </div>
+        <div class="card" aria-live="polite">
+          <ul class="lines" id="lines"></ul>
+        </div>
+        <div class="card">
+          <h2>スマホをつなぐ</h2>
+          <p class="small muted">操縦のスマホで <strong id="control-url"></strong> を開いて、この番号を入れます（1回だけ・2分まで）。</p>
+          <p class="code" id="code">－－－－－－</p>
+          <button type="button" class="btn" id="new-code">新しい番号を出す</button>
+          <ul class="devices" id="devices" style="margin-top:10px"></ul>
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>ブラックボックス（あとで書きかえられない記録） <span id="check"></span></h2>
+      <ul class="log" id="log"></ul>
+    </section>
+    <p class="error" id="error" role="alert"></p>
+  </main>
+  <script type="module" src="/screen.js"></script>
+</body>
+</html>

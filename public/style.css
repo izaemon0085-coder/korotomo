@@ -1,0 +1,75 @@
+/* 小さなロボット：工作室の色。「止める」はいつも赤く大きく */
+:root {
+  --bg: #f3f1ec;
+  --surface: #ffffff;
+  --surface-2: #ebe7de;
+  --text: #2a2622;
+  --muted: #6b645c;
+  --border: #d8d1c4;
+  --accent: #2e6f9e;
+  --accent-text: #fff;
+  --stop: #c62f2f;
+  --ok: #2f7d55;
+  --radius: 14px;
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.6; }
+button, input { font: inherit; color: inherit; }
+.top { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.brand { font-weight: 800; font-size: 1.15rem; }
+.beta { font-size: .7rem; background: var(--accent); color: var(--accent-text); padding: 1px 8px; border-radius: 999px; vertical-align: middle; }
+.motto { color: var(--muted); font-size: .9rem; }
+.page { max-width: 1200px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+h2 { font-size: 1.05rem; margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.btn { border: none; border-radius: 999px; padding: 8px 18px; min-height: 44px; cursor: pointer; font-weight: 700; background: var(--accent); color: var(--accent-text); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn.ghost { background: var(--surface-2); color: var(--text); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn:focus-visible, .stop:focus-visible, .pad button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* ロボットの画面 */
+.board { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; }
+@media (max-width: 860px) { .board { grid-template-columns: 1fr; } }
+.room { width: 100%; aspect-ratio: 1; max-height: 70vh; background: repeating-linear-gradient(0deg, #f7f5f0 0 39px, #ece7dc 39px 40px), repeating-linear-gradient(90deg, transparent 0 39px, #ece7dc 39px 40px); border-radius: 12px; border: 3px solid #b9ae9c; display: block; }
+.status { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.cell { background: var(--surface-2); border-radius: 12px; padding: 8px 12px; }
+.cell p { margin: 0; }
+.num { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.state-stop { color: var(--stop); }
+.state-ok { color: var(--ok); }
+.code { font-size: 2.6rem; font-weight: 800; letter-spacing: .15em; font-variant-numeric: tabular-nums; margin: 4px 0; }
+.lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.line { display: flex; gap: 10px; align-items: center; }
+.line img { width: 40px; height: 40px; flex: none; }
+.line p { margin: 0; }
+.devices { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.devices li { display: flex; gap: 8px; align-items: center; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #bbb; }
+.dot.alive { background: var(--ok); }
+.devices .btn { margin-left: auto; min-height: 32px; padding: 2px 12px; font-size: .85rem; }
+.log { list-style: none; padding: 0; margin: 0; font-size: .85rem; font-variant-numeric: tabular-nums; max-height: 260px; overflow-y: auto; }
+.log li { border-bottom: 1px solid var(--border); padding: 3px 0; }
+.log .hash { color: var(--muted); font-family: ui-monospace, monospace; font-size: .75rem; }
+.check-ok { color: var(--ok); font-weight: 700; }
+.check-ng { color: var(--stop); font-weight: 700; }
+input[type="range"] { width: 100%; }
+
+/* 操縦のスマホ */
+.control { max-width: 520px; }
+.stop { position: sticky; top: 0; z-index: 5; width: 100%; min-height: 84px; border: none; border-radius: 18px; background: var(--stop); color: #fff; font-size: 1.8rem; font-weight: 900; letter-spacing: .1em; cursor: pointer; box-shadow: 0 4px 0 #8f1f1f; touch-action: manipulation; }
+.stop:active { transform: translateY(2px); box-shadow: 0 2px 0 #8f1f1f; }
+.banner { border-radius: 12px; padding: 8px 12px; font-weight: 700; }
+.banner.stopped { background: #fbe4e4; color: var(--stop); }
+.banner.lost { background: #fff3d6; color: #8a5a00; }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pad button { min-height: 84px; border-radius: 16px; border: 2px solid var(--border); background: var(--surface); font-size: 1.8rem; font-weight: 800; cursor: pointer; touch-action: none; }
+.pad button.pressed { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pad .blank { visibility: hidden; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+label.field { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+input[type="text"], input[inputmode="numeric"] { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; min-height: 44px; font-size: 1.1rem; }
+.error { color: var(--stop); font-weight: 700; min-height: 1.4em; margin: 0; }
